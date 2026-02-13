@@ -44,6 +44,7 @@ public class DemoqaPractice {
         assertTrue(page.locator("#lastName").isVisible());
         assertTrue(page.locator("#userEmail").isVisible());
         Locator femaleLabel = page.locator("label[for='gender-radio-2']");
+        assertTrue(femaleLabel.isVisible());
         assertTrue(page.locator("#userNumber").isVisible());
         assertTrue(page.locator("#dateOfBirthInput").isVisible());
         assertTrue(page.locator("#subjectsInput").isVisible());
