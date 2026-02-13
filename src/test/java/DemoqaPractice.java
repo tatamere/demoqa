@@ -120,7 +120,7 @@ public class DemoqaPractice {
         Locator modal = page.locator(".modal-content");
         assertFalse(modal.isVisible());
 
-        page.fill("#userNumber", "12345678910");
+        page.fill("#userNumber", "5551234567");
         page.click("#submit");
         assertTrue(modal.isVisible());
     }
