@@ -66,7 +66,7 @@ public class DemoqaPractice {
         // Submit on empty fields
         page.locator("#submit").click();
 
-        // 1️⃣ Success modal is invisible
+        // Success modal is invisible
         assertFalse(page.locator(".modal-content").isVisible());
 
         //  First Name
