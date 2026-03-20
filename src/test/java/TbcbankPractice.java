@@ -1,14 +1,13 @@
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.Geolocation;
 import org.junit.jupiter.api.*;
-
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
-
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.testng.AssertJUnit.assertEquals;
 
 public class TbcbankPractice {
 
@@ -21,11 +20,12 @@ public class TbcbankPractice {
         playwright = Playwright.create();
         browser = playwright.chromium().launch(
                 new BrowserType.LaunchOptions()
-                        .setHeadless(true)
+                        .setHeadless(false)
                         .setArgs(List.of("--start-maximized"))
         );
 
     }
+
     // 1. Scenario 4: Offers List-Empty Result Validation (Mastercard filter)
     @Test
     void offersListEmptyResultValidation() {
@@ -39,8 +39,7 @@ public class TbcbankPractice {
 
         partnerOffer.click();
 
-        Locator mastercard = page.locator(
-                "div.filter-item__label:has-text('მასტერქარდი')");
+        Locator mastercard = page.locator("div.filter-item__label:has-text('მასტერქარდი')");
 
         mastercard.click();
 
@@ -50,11 +49,9 @@ public class TbcbankPractice {
         assertEquals(0, offerCount);
 
         page.waitForTimeout(5000);
-        page.locator("app-marketing-filter-group:has-text('შეთავაზების ტიპი') button")
-                .click();
+        page.locator("app-marketing-filter-group:has-text('შეთავაზების ტიპი') button").click();
         page.waitForTimeout(5000);
         assertTrue(page.locator(".marketing__cards-list > a").count() > 0);
-
     }
 
     // 2. Scenario 5: Loans – Apply Button Redirect to TBC Credit
@@ -74,16 +71,16 @@ public class TbcbankPractice {
                 new Page.GetByRoleOptions().setName("სამომხმარებლო")).click();
 
         Locator heading = page.getByRole(AriaRole.HEADING);
-       assertThat(heading.first()).isVisible();
+        assertThat(heading.first()).isVisible();
         page.waitForTimeout(5000);
 
-      page.getByRole(AriaRole.BUTTON,
+        page.getByRole(AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("პირობები")).first().click();
 
-       Locator applyButton = page.getByRole(AriaRole.BUTTON,
+        Locator applyButton = page.getByRole(AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("სესხის მოთხოვნა"));
 
-       assertThat(applyButton).isVisible();
+        assertThat(applyButton).isVisible();
         assertThat(applyButton).isEnabled();
 
 
@@ -93,7 +90,53 @@ public class TbcbankPractice {
         System.out.println("Current host: " + host);
         assert host.contains("tbccredit") || host.equals("tbccredit.ge");
 
-       assertThat(page.locator("form")).isVisible();
+        assertThat(page.locator("form")).isVisible();
     }
+    // 3. Scenario 6 Mobile – Quick Actions → Locations (ATM & Branch validation):
+    @Test
+    void mobileQuickActionsLocationsTest() throws InterruptedException {
 
+        // mobile viewport (iPhone ზომა დაახლოებით)
+        BrowserContext context = TbcbankPractice.browser.newContext(
+                new Browser.NewContextOptions().setViewportSize(390, 844)
+                        .setPermissions(Arrays.asList("geolocation"))
+                        .setGeolocation(new Geolocation(41.7151, 44.8271))
+        );
+        Page page = context.newPage();
+
+        // 1. მთავარი გვერდის გახსნა
+        page.navigate("https://tbcbank.ge/ka");
+        Thread.sleep(5000);
+
+        // 2. Quick Actions-დან ლოკაციებზე გადასვლა
+        Locator addressesLink = page.locator("//a[contains(text(),'მისამართები')]");
+        addressesLink.click();
+        page.waitForTimeout(5000);
+
+        // 3. ვამოწმებ რომ გადავიდა locations გვერდზე
+        String url = page.url();
+        if (!url.contains("atms&branches")) {
+            throw new AssertionError("Not redirected to locations page");
+        }
+
+        // 4. ATM ტაბზე გადასვლა
+        Locator atmTab = page.locator("//button//span[text()='ბანკომატები']");
+        atmTab.click();
+
+        Locator firstCard = page.locator("app-atm-branches-section-list-item").first();
+
+        firstCard.scrollIntoViewIfNeeded();
+        firstCard.isVisible();
+        assertThat(firstCard).containsText("ATM");
+
+        // 5. ფილიალების ტაბზე გადასვლა
+        Locator branchesTab = page.locator("//button//span[text()='ფილიალები']");
+        branchesTab.click();
+        Locator firstBranchCard = page.locator("app-atm-branches-section-list-item").first();
+
+        firstBranchCard.scrollIntoViewIfNeeded();
+        firstBranchCard.isVisible();
+        assertThat(firstBranchCard).containsText("ჩიტაიას ქ. #31");
+        assertThat(firstBranchCard).containsText("სამუშაო საათები - 24/7");
     }
+}
